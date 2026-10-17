@@ -4,7 +4,7 @@ import pickle
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score, f1_score
+from sklearn.metrics import classification_report, accuracy_score, f1_score, confusion_matrix
 from app.ai.classifier import normalize_text, SUPPORTED_CATEGORIES
 
 # Labeled training dataset representing common civic complaints across categories
@@ -96,6 +96,8 @@ def train_and_evaluate_classifier():
     y_pred = model.predict(X_test_vec)
     acc = accuracy_score(y_test, y_pred)
     macro_f1 = f1_score(y_test, y_pred, average="macro")
+    classes = sorted(list(set(labels)))
+    cm = confusion_matrix(y_test, y_pred, labels=classes).tolist()
     report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
 
     # Save trained model bundle
@@ -120,6 +122,8 @@ def train_and_evaluate_classifier():
         "test_samples": len(X_test),
         "test_accuracy": round(float(acc), 4),
         "test_macro_f1": round(float(macro_f1), 4),
+        "class_labels": classes,
+        "confusion_matrix": cm,
         "detailed_metrics": report
     }
     with open(os.path.join(data_dir, "evaluation_results.json"), "w") as f:

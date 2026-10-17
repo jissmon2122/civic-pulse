@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
-import { authApi } from '../api';
+import { authApi, municipalApi } from '../api';
 
 interface AuthContextType {
   user: User | null;
@@ -9,7 +9,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isStaff: boolean;
   isAdmin: boolean;
+  isMunicipal: boolean;
+  isOfficer: boolean;
+  isFieldWorker: boolean;
   login: (email: string, password: string) => Promise<User>;
+  municipalLogin: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<User>;
   logout: () => void;
   updateUser: (updated: User) => void;
@@ -64,6 +68,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return res.user;
   };
 
+  const municipalLogin = async (email: string, password: string): Promise<User> => {
+    const res = await municipalApi.login({ email, password });
+    localStorage.setItem('civic_pulse_token', res.access_token);
+    localStorage.setItem('civic_pulse_user', JSON.stringify(res.user));
+    setToken(res.access_token);
+    setUser(res.user);
+    return res.user;
+  };
+
   const register = async (name: string, email: string, password: string, phone?: string): Promise<User> => {
     const res = await authApi.register({ name, email, password, phone_number: phone });
     localStorage.setItem('civic_pulse_token', res.access_token);
@@ -88,6 +101,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isAuthenticated = !!user && !!token;
   const isStaff = user?.role === 'staff' || user?.role === 'admin';
   const isAdmin = user?.role === 'admin';
+  const isMunicipal = !!user && ['staff', 'officer', 'field_worker', 'admin'].includes(user.role);
+  const isOfficer = !!user && ['staff', 'officer', 'admin'].includes(user.role);
+  const isFieldWorker = user?.role === 'field_worker';
 
   return (
     <AuthContext.Provider
@@ -98,7 +114,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated,
         isStaff,
         isAdmin,
+        isMunicipal,
+        isOfficer,
+        isFieldWorker,
         login,
+        municipalLogin,
         register,
         logout,
         updateUser,

@@ -280,3 +280,133 @@ class AreaCount(BaseModel):
     ward_or_area: str
     count: int
     resolved_count: int
+
+
+# -------------------------------- MUNICIPAL PORTAL SCHEMAS --------------------------------
+class DepartmentBase(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    code: str = Field(..., min_length=2, max_length=20)
+    description: Optional[str] = None
+    contact_email: Optional[str] = None
+    is_active: bool = True
+
+
+class DepartmentCreate(DepartmentBase):
+    pass
+
+
+class DepartmentResponse(DepartmentBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MunicipalStaffResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: UserRole
+    phone_number: Optional[str] = None
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    account_status: UserStatus
+    active_assignments_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ComplaintVerificationRequest(BaseModel):
+    department_id: Optional[int] = None
+    priority_level: Optional[PriorityLevel] = None
+    due_date: Optional[datetime] = None
+    officer_notes: Optional[str] = None
+
+
+class ComplaintRejectionRequest(BaseModel):
+    reason: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    officer_notes: Optional[str] = None
+
+
+class ComplaintAssignmentRequest(BaseModel):
+    department_id: Optional[int] = None
+    assigned_to: Optional[str] = None
+    assigned_to_user_id: Optional[str] = None
+    due_date: Optional[datetime] = None
+    instructions: Optional[str] = None
+    priority_level: Optional[PriorityLevel] = None
+    reassign_reason: Optional[str] = None
+
+
+class ComplaintProgressRequest(BaseModel):
+    progress_notes: str = Field(..., min_length=3, max_length=2000)
+    mark_in_progress: bool = True
+
+
+class ComplaintResolutionSubmitRequest(BaseModel):
+    completion_notes: str = Field(..., min_length=5, max_length=2000)
+    storage_key: Optional[str] = None  # uploaded resolution evidence key
+    evidence_image_ids: Optional[List[str]] = None
+
+
+class ComplaintResolutionReviewRequest(BaseModel):
+    approved: Optional[bool] = None
+    decision: Optional[str] = None  # 'approve', 'reject', 'reopen'
+    review_notes: Optional[str] = None
+
+
+class MunicipalAssignmentResponse(BaseModel):
+    id: int
+    report_id: str
+    report_title: str
+    report_reference: str
+    priority_level: PriorityLevel
+    status: str
+    assigned_to: str
+    staff_name: Optional[str] = None
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    due_date: Optional[datetime] = None
+    instructions: Optional[str] = None
+    assigned_at: Optional[datetime] = None
+    ward_or_area: Optional[str] = None
+    category_name: Optional[str] = None
+    is_overdue: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MunicipalComplaintResponse(ReportPrivateResponse):
+    report_id: Optional[str] = None
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    department_code: Optional[str] = None
+    due_date: Optional[datetime] = None
+    is_overdue: bool = False
+    officer_notes: Optional[str] = None
+    verified_at: Optional[datetime] = None
+    verified_by: Optional[str] = None
+    verifier_name: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    active_assignment: Optional[Dict[str, Any]] = None
+
+
+class MunicipalDashboardStats(BaseModel):
+    total_complaints: int
+    new_complaints: int
+    awaiting_verification: int
+    verified_complaints: int
+    assigned_complaints: int
+    work_in_progress: int
+    resolved_complaints: int
+    overdue_complaints: int
+    category_distribution: List[Dict[str, Any]]
+    status_distribution: List[Dict[str, Any]]
+    priority_distribution: List[Dict[str, Any]]
+    recent_complaints: List[MunicipalComplaintResponse]
+    high_priority_issues: List[MunicipalComplaintResponse]
+    overdue_assignments: List[MunicipalComplaintResponse]
+    department_workload: List[Dict[str, Any]]
+    daily_trend: List[Dict[str, Any]]
+

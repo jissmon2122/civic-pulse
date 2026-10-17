@@ -20,6 +20,8 @@ import { MapPicker } from '../map/MapPicker';
 import { reportsApi, aiApi, adminApi } from '../../api';
 import { Category, ClassifyResult, DuplicateCandidate } from '../../types';
 
+import { TAMIL_NADU_DISTRICTS, TAMIL_NADU_CENTER, DistrictInfo } from '../../utils/tamilNaduDistricts';
+
 export const ReportWizard: React.FC = () => {
   const navigate = useNavigate();
 
@@ -32,10 +34,11 @@ export const ReportWizard: React.FC = () => {
   // Form State
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [latitude, setLatitude] = useState<number>(12.9716);
-  const [longitude, setLongitude] = useState<number>(77.5946);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('Chennai');
+  const [latitude, setLatitude] = useState<number>(13.0827);
+  const [longitude, setLongitude] = useState<number>(80.2707);
   const [locationDescription, setLocationDescription] = useState<string>('');
-  const [ward, setWard] = useState<string>('Ward 42 - Central');
+  const [ward, setWard] = useState<string>('Chennai District');
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number>(1);
@@ -316,28 +319,37 @@ export const ReportWizard: React.FC = () => {
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-primary mb-1.5">
+                    Tamil Nadu District (38 Districts)
+                  </label>
+                  <select
+                    value={selectedDistrict}
+                    onChange={(e) => {
+                      const distName = e.target.value;
+                      setSelectedDistrict(distName);
+                      setWard(`${distName} District`);
+                      const match = TAMIL_NADU_DISTRICTS.find((d) => d.name === distName);
+                      if (match) {
+                        setLatitude(match.center[0]);
+                        setLongitude(match.center[1]);
+                      }
+                    }}
+                    className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm text-text-primary min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none font-medium"
+                  >
+                    {TAMIL_NADU_DISTRICTS.map((d) => (
+                      <option key={d.id} value={d.name}>
+                        {d.name} ({d.tamilName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <Input
-                  label="Location Landmark / Street (Optional)"
-                  placeholder="e.g. Near Metro Exit 2, opposite library"
+                  label="Locality / Landmark / Street"
+                  placeholder="e.g. Crosscut Road, Gandhipuram or Mount Road"
                   value={locationDescription}
                   onChange={(e) => setLocationDescription(e.target.value)}
                 />
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-primary mb-1.5">
-                    Municipal Ward / Zone
-                  </label>
-                  <select
-                    value={ward}
-                    onChange={(e) => setWard(e.target.value)}
-                    className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm text-text-primary min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none"
-                  >
-                    <option value="Ward 41 - North Bazaar">Ward 41 - North Bazaar</option>
-                    <option value="Ward 42 - Central">Ward 42 - Central</option>
-                    <option value="Ward 43 - Tech Corridor">Ward 43 - Tech Corridor</option>
-                    <option value="Ward 44 - South Market">Ward 44 - South Market</option>
-                    <option value="Ward 45 - West Residential">Ward 45 - West Residential</option>
-                  </select>
-                </div>
               </div>
 
               <div className="flex justify-between items-center pt-3 border-t border-border">

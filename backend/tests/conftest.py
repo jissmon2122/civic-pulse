@@ -34,6 +34,12 @@ def setup_test_db():
     for idx, (name, desc) in enumerate(categories, start=1):
         db.add(Category(id=idx, name=name, description=desc, icon_name="AlertCircle", color_hint="#0E7C86", is_active=True))
 
+    from app.models import Department
+    dept_road = Department(id=1, name="Road Maintenance", code="ROAD", description="Road works", contact_email="roads@test.com", is_active=True)
+    dept_light = Department(id=2, name="Street Lighting", code="LIGHT", description="Street lighting", contact_email="lighting@test.com", is_active=True)
+    db.add_all([dept_road, dept_light])
+    db.commit()
+
     # Seed test accounts
     citizen = User(
         id="test-citizen-id-1",
@@ -49,6 +55,25 @@ def setup_test_db():
         email="staff@test.com",
         password_hash=hash_password("Password123!"),
         role=UserRole.STAFF,
+        department_id=1,
+        account_status=UserStatus.ACTIVE
+    )
+    officer = User(
+        id="test-officer-id-1",
+        name="Test Officer",
+        email="officer@test.com",
+        password_hash=hash_password("Password123!"),
+        role=UserRole.OFFICER,
+        department_id=1,
+        account_status=UserStatus.ACTIVE
+    )
+    worker = User(
+        id="test-worker-id-1",
+        name="Test Worker",
+        email="worker@test.com",
+        password_hash=hash_password("Password123!"),
+        role=UserRole.FIELD_WORKER,
+        department_id=1,
         account_status=UserStatus.ACTIVE
     )
     admin = User(
@@ -59,7 +84,7 @@ def setup_test_db():
         role=UserRole.ADMIN,
         account_status=UserStatus.ACTIVE
     )
-    db.add_all([citizen, staff, admin])
+    db.add_all([citizen, staff, officer, worker, admin])
     db.commit()
     db.close()
 
@@ -92,6 +117,16 @@ def citizen_token():
 @pytest.fixture
 def staff_token():
     return create_access_token(subject="test-staff-id-1", role=UserRole.STAFF.value)
+
+
+@pytest.fixture
+def officer_token():
+    return create_access_token(subject="test-officer-id-1", role=UserRole.OFFICER.value)
+
+
+@pytest.fixture
+def worker_token():
+    return create_access_token(subject="test-worker-id-1", role=UserRole.FIELD_WORKER.value)
 
 
 @pytest.fixture

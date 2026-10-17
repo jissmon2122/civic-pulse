@@ -37,11 +37,8 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { label: 'Explore Map', path: '/explorer', icon: <Map size={16} /> },
     { label: 'Analytics', path: '/analytics', icon: <BarChart3 size={16} /> },
+    { label: 'Municipal Staff Portal', path: '/municipal/dashboard', icon: <Shield size={16} /> },
   ];
-
-  if (isStaff) {
-    navLinks.push({ label: 'Staff Portal', path: '/staff', icon: <Shield size={16} /> });
-  }
 
   if (isAdmin) {
     navLinks.push({ label: 'Admin', path: '/admin', icon: <Shield size={16} /> });
@@ -78,6 +75,16 @@ export const Navbar: React.FC = () => {
 
         {/* Right Action Cluster */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Quick Staff Portal Access Badge */}
+          <Link
+            to="/municipal/dashboard"
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#8B1E3F] bg-amber-50 hover:bg-amber-100 border border-amber-300 transition-colors shadow-xs"
+            title="Municipal Staff & Officer Portal"
+          >
+            <Shield size={13} className="text-[#8B1E3F]" />
+            <span>Staff Portal</span>
+          </Link>
+
           {/* Quick Report Issue Button */}
           <Link to="/report">
             <Button
@@ -198,6 +205,13 @@ export const Navbar: React.FC = () => {
                       >
                         Design Styleguide
                       </Link>
+                      <Link
+                        to="/municipal/dashboard"
+                        onClick={() => setShowUserMenu(false)}
+                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 mt-1"
+                      >
+                        Municipal Staff Portal &rarr;
+                      </Link>
                     </div>
                     <div className="pt-1 border-t border-border/60">
                       <button
@@ -218,6 +232,9 @@ export const Navbar: React.FC = () => {
             </>
           ) : (
             <div className="flex items-center gap-1.5">
+              <Link to="/municipal/login" className="hidden sm:inline-flex items-center text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-300">
+                Staff Portal
+              </Link>
               <Link to="/login">
                 <Button size="sm" variant="ghost" className="text-xs">
                   Sign In

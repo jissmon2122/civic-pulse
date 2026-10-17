@@ -70,14 +70,38 @@ def get_optional_current_user(
         return None
 
 
+def get_current_municipal_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Enforces that the user has any valid municipal credential (Staff, Officer, Field Worker, or Admin)."""
+    if current_user.role not in (UserRole.STAFF, UserRole.OFFICER, UserRole.FIELD_WORKER, UserRole.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: municipal staff, officer, or administrator credentials required."
+        )
+    return current_user
+
+
+def get_current_officer_or_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Enforces that the user has municipal OFFICER, STAFF, or ADMIN privileges (excludes field workers from decision approval)."""
+    if current_user.role not in (UserRole.STAFF, UserRole.OFFICER, UserRole.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: municipal officer or administrator privileges required."
+        )
+    return current_user
+
+
 def get_current_staff_or_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """Enforces that the user has at least municipal STAFF or ADMIN privileges."""
-    if current_user.role not in (UserRole.STAFF, UserRole.ADMIN):
+    """Backward-compatible helper enforcing municipal staff or administrator privileges."""
+    if current_user.role not in (UserRole.STAFF, UserRole.OFFICER, UserRole.FIELD_WORKER, UserRole.ADMIN):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access forbidden: municipal staff or administrator privileges required."
+            detail="Access forbidden: municipal credentials required."
         )
     return current_user
 

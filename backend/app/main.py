@@ -8,7 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.models import Category
+from app.models import Category, Department
 from app.ai.classifier import SUPPORTED_CATEGORIES
 
 # Import all API routers
@@ -17,6 +17,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.ai import router as ai_router
 from app.api.v1.staff import router as staff_router
+from app.api.v1.municipal import router as municipal_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.notifications import router as notifications_router
@@ -57,11 +58,42 @@ def init_default_categories():
         db.close()
 
 
+def init_default_departments():
+    """Initializes standard municipal departments if table is empty."""
+    db = SessionLocal()
+    try:
+        count = db.query(Department).count()
+        if count == 0:
+            default_depts = [
+                ("Road Maintenance", "ROAD", "Road crater repair, resurfacing, asphalt works, and central divider maintenance", "roads@municipal.local"),
+                ("Drainage and Sewerage", "DRAIN", "Stormwater drains, sewer blockages, manhole repair, and flood mitigation", "drainage@municipal.local"),
+                ("Waste Management", "WASTE", "Solid waste collection, litter mitigation, dumping clearance, and container service", "waste@municipal.local"),
+                ("Street Lighting", "LIGHT", "Streetlamp electrical maintenance, pole repairs, dark street illumination, and cabling", "lighting@municipal.local"),
+                ("Public Works", "PW", "Public benches, footbridges, ramps, civic structures, and municipal buildings", "publicworks@municipal.local"),
+                ("Water Supply", "WATER", "Municipal pipeline maintenance, valve repairs, potable drinking water leak resolution", "water@municipal.local")
+            ]
+            for name, code, desc, email in default_depts:
+                db.add(Department(
+                    name=name,
+                    code=code,
+                    description=desc,
+                    contact_email=email,
+                    is_active=True
+                ))
+            db.commit()
+            logger.info("Initialized default municipal departments.")
+    except Exception as e:
+        logger.error(f"Error initializing departments: {e}")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Ensure database tables exist and seed categories
+    # Startup: Ensure database tables exist and seed categories & departments
     Base.metadata.create_all(bind=engine)
     init_default_categories()
+    init_default_departments()
     logger.info("CIVIC PULSE backend started successfully.")
     yield
     logger.info("CIVIC PULSE backend shutting down.")
@@ -128,6 +160,7 @@ app.include_router(auth_router, prefix=api_prefix)
 app.include_router(reports_router, prefix=api_prefix)
 app.include_router(ai_router, prefix=api_prefix)
 app.include_router(staff_router, prefix=api_prefix)
+app.include_router(municipal_router, prefix=api_prefix)
 app.include_router(admin_router, prefix=api_prefix)
 app.include_router(analytics_router, prefix=api_prefix)
 app.include_router(notifications_router, prefix=api_prefix)

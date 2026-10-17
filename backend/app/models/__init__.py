@@ -14,13 +14,30 @@ def utc_now():
 
 class UserRole(str, Enum):
     CITIZEN = "citizen"
-    STAFF = "staff"
-    ADMIN = "admin"
+    STAFF = "staff"             # Municipal Officer / Operational Staff
+    OFFICER = "officer"         # Municipal Officer (verification & assignment)
+    FIELD_WORKER = "field_worker" # Field Maintenance & Repair Worker
+    ADMIN = "admin"             # Municipal Administrator
 
 
 class UserStatus(str, Enum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
+
+
+class Department(Base):
+    __tablename__ = "departments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    code = Column(String(20), unique=True, nullable=False, index=True)
+    description = Column(String(255), nullable=True)
+    contact_email = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    members = relationship("User", back_populates="department")
+    assigned_reports = relationship("Report", back_populates="department")
 
 
 class User(Base):
@@ -30,12 +47,14 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CITIZEN, index=True)
-    account_status = Column(SQLEnum(UserStatus), nullable=False, default=UserStatus.ACTIVE)
+    role = Column(SQLEnum(UserRole, native_enum=False), nullable=False, default=UserRole.CITIZEN, index=True)
+    account_status = Column(SQLEnum(UserStatus, native_enum=False), nullable=False, default=UserStatus.ACTIVE)
     phone_number = Column(String(20), nullable=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
+    department = relationship("Department", back_populates="members")
     reports = relationship("Report", foreign_keys="Report.reported_by", back_populates="reporter")
     assigned_reports = relationship("Report", foreign_keys="Report.assigned_to", back_populates="assignee")
     notifications = relationship("Notification", back_populates="recipient", cascade="all, delete-orphan")
@@ -58,8 +77,10 @@ class Category(Base):
 class ReportStatus(str, Enum):
     SUBMITTED = "SUBMITTED"
     UNDER_REVIEW = "UNDER_REVIEW"
+    VERIFIED = "VERIFIED"
     ASSIGNED = "ASSIGNED"
     IN_PROGRESS = "IN_PROGRESS"
+    RESOLUTION_SUBMITTED = "RESOLUTION_SUBMITTED"
     RESOLVED = "RESOLVED"
     CLOSED = "CLOSED"
     NEEDS_INFORMATION = "NEEDS_INFORMATION"
@@ -97,15 +118,21 @@ class Report(Base):
     ward_or_area = Column(String(100), nullable=True, index=True)
     
     # Workflow Status
-    status = Column(SQLEnum(ReportStatus), default=ReportStatus.SUBMITTED, nullable=False, index=True)
+    status = Column(SQLEnum(ReportStatus, native_enum=False), default=ReportStatus.SUBMITTED, nullable=False, index=True)
     
     # Priority
     priority_score = Column(Float, default=10.0, nullable=False, index=True)
-    priority_level = Column(SQLEnum(PriorityLevel), default=PriorityLevel.LOW, nullable=False, index=True)
+    priority_level = Column(SQLEnum(PriorityLevel, native_enum=False), default=PriorityLevel.LOW, nullable=False, index=True)
     priority_explanation = Column(Text, nullable=True)
     
-    # Assignment
+    # Assignment & Municipal Officers
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
     assigned_to = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    officer_notes = Column(Text, nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    verified_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
@@ -116,6 +143,8 @@ class Report(Base):
     reporter = relationship("User", foreign_keys=[reported_by], back_populates="reports")
     assignee = relationship("User", foreign_keys=[assigned_to], back_populates="assigned_reports")
     category = relationship("Category", foreign_keys=[category_id], back_populates="reports")
+    department = relationship("Department", foreign_keys=[department_id], back_populates="assigned_reports")
+    verifier = relationship("User", foreign_keys=[verified_by])
     images = relationship("ReportImage", back_populates="report", cascade="all, delete-orphan")
     history = relationship("ReportHistory", back_populates="report", cascade="all, delete-orphan", order_by="desc(ReportHistory.created_at)")
     assignments = relationship("Assignment", back_populates="report", cascade="all, delete-orphan", order_by="desc(Assignment.assigned_at)")
@@ -148,8 +177,8 @@ class ReportHistory(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     report_id = Column(String(36), ForeignKey("reports.id"), nullable=False, index=True)
     changed_by = Column(String(36), ForeignKey("users.id"), nullable=False)
-    previous_status = Column(SQLEnum(ReportStatus), nullable=True)
-    new_status = Column(SQLEnum(ReportStatus), nullable=False)
+    previous_status = Column(SQLEnum(ReportStatus, native_enum=False), nullable=True)
+    new_status = Column(SQLEnum(ReportStatus, native_enum=False), nullable=False)
     public_comment = Column(Text, nullable=True)
     internal_note = Column(Text, nullable=True)  # Visible to Staff/Admin only
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -163,12 +192,18 @@ class Assignment(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     report_id = Column(String(36), ForeignKey("reports.id"), nullable=False, index=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
     assigned_to = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     assigned_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    instructions = Column(Text, nullable=True)
+    status = Column(String(50), default="ACTIVE", nullable=False)  # ACTIVE, COMPLETED, REASSIGNED
+    reassign_reason = Column(Text, nullable=True)
     assigned_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     unassigned_at = Column(DateTime(timezone=True), nullable=True)
 
     report = relationship("Report", back_populates="assignments")
+    department = relationship("Department", foreign_keys=[department_id])
     staff_member = relationship("User", foreign_keys=[assigned_to])
     assigner = relationship("User", foreign_keys=[assigned_by])
 
@@ -188,7 +223,7 @@ class DuplicateRelationship(Base):
     similarity_score = Column(Float, nullable=False)
     distance_meters = Column(Float, nullable=True)
     detection_method = Column(String(50), default="ai_hybrid_geo_text", nullable=False)
-    review_status = Column(SQLEnum(DuplicateReviewStatus), default=DuplicateReviewStatus.PENDING, nullable=False)
+    review_status = Column(SQLEnum(DuplicateReviewStatus, native_enum=False), default=DuplicateReviewStatus.PENDING, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     primary_report = relationship("Report", foreign_keys=[primary_report_id])

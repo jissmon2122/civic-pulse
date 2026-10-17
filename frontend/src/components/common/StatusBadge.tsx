@@ -41,6 +41,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       text: 'text-[#B87702]',
       border: 'border-[#F8E2B6]',
     },
+    VERIFIED: {
+      label: 'Verified',
+      icon: <CheckCircle2 size={size === 'sm' ? 12 : 14} className="text-[#0E7C86]" />,
+      bg: 'bg-teal-50',
+      text: 'text-teal-800',
+      border: 'border-teal-200',
+    },
     ASSIGNED: {
       label: 'Assigned',
       icon: <UserCheck size={size === 'sm' ? 12 : 14} className="text-[#2F6FDE]" />,
@@ -54,6 +61,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       bg: 'bg-status-in_progress-tint',
       text: 'text-[#2157B5]',
       border: 'border-[#C7DBFB]',
+    },
+    RESOLUTION_SUBMITTED: {
+      label: 'Evidence Uploaded',
+      icon: <CheckCircle2 size={size === 'sm' ? 12 : 14} className="text-emerald-600" />,
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-800',
+      border: 'border-emerald-200',
     },
     RESOLVED: {
       label: 'Resolved',

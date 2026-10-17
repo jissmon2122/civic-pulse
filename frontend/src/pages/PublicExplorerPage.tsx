@@ -9,6 +9,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { PriorityChip } from '../components/common/PriorityChip';
 import { reportsApi, adminApi } from '../api';
 import { Report, Category, ReportStatus, PriorityLevel } from '../types';
+import { TAMIL_NADU_DISTRICTS, TAMIL_NADU_CENTER, TAMIL_NADU_DEFAULT_ZOOM } from '../utils/tamilNaduDistricts';
 
 export const PublicExplorerPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,6 +21,7 @@ export const PublicExplorerPage: React.FC = () => {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.get('search') || '');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>(searchParams.get('district') || '');
   const [selectedCatId, setSelectedCatId] = useState<number | undefined>(
     searchParams.get('category_id') ? Number(searchParams.get('category_id')) : undefined
   );
@@ -38,6 +40,7 @@ export const PublicExplorerPage: React.FC = () => {
         category_id: selectedCatId,
         status: selectedStatus,
         priority_level: selectedPriority,
+        ward_or_area: selectedDistrict || undefined,
         page_size: 50,
       });
       setReports(data);
@@ -54,7 +57,7 @@ export const PublicExplorerPage: React.FC = () => {
 
   useEffect(() => {
     fetchReports();
-  }, [selectedCatId, selectedStatus, selectedPriority]);
+  }, [selectedCatId, selectedStatus, selectedPriority, selectedDistrict]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,11 +66,16 @@ export const PublicExplorerPage: React.FC = () => {
 
   const handleClearFilters = () => {
     setSearchTerm('');
+    setSelectedDistrict('');
     setSelectedCatId(undefined);
     setSelectedStatus(undefined);
     setSelectedPriority(undefined);
     setSearchParams({});
   };
+
+  const activeDistrict = TAMIL_NADU_DISTRICTS.find((d) => d.name === selectedDistrict);
+  const mapCenter = activeDistrict ? activeDistrict.center : TAMIL_NADU_CENTER;
+  const mapZoom = activeDistrict ? 11 : TAMIL_NADU_DEFAULT_ZOOM;
 
   // Convert reports into pins for CivicMap
   const mapPins: MapReportPin[] = reports.map((r) => ({
@@ -116,6 +124,20 @@ export const PublicExplorerPage: React.FC = () => {
           <Filter size={13} /> Filters:
         </span>
 
+        {/* Tamil Nadu 38 Districts Dropdown */}
+        <select
+          value={selectedDistrict}
+          onChange={(e) => setSelectedDistrict(e.target.value)}
+          className="bg-surface border border-border rounded-xl px-2.5 py-1.5 text-xs text-text-primary focus:ring-1 focus:ring-primary font-medium"
+        >
+          <option value="">All 38 Districts (Tamil Nadu)</option>
+          {TAMIL_NADU_DISTRICTS.map((d) => (
+            <option key={d.id} value={d.name}>
+              {d.name} ({d.tamilName})
+            </option>
+          ))}
+        </select>
+
         {/* Category Dropdown */}
         <select
           value={selectedCatId || ''}
@@ -157,7 +179,7 @@ export const PublicExplorerPage: React.FC = () => {
           <option value="LOW">Low</option>
         </select>
 
-        {(selectedCatId || selectedStatus || selectedPriority || searchTerm) && (
+        {(selectedDistrict || selectedCatId || selectedStatus || selectedPriority || searchTerm) && (
           <button
             onClick={handleClearFilters}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-status-critical hover:bg-status-critical-tint font-medium"
@@ -175,6 +197,8 @@ export const PublicExplorerPage: React.FC = () => {
             reports={mapPins}
             selectedReportId={selectedReportId}
             onSelectReport={(id) => setSelectedReportId(id)}
+            center={mapCenter}
+            zoom={mapZoom}
             className="h-full w-full"
           />
         </div>
@@ -182,24 +206,30 @@ export const PublicExplorerPage: React.FC = () => {
         {/* Right Side: Synchronized List Panel (5 cols) */}
         <div className="lg:col-span-5 space-y-3 h-[650px] overflow-y-auto pr-1">
           <div className="flex items-center justify-between pb-1 text-xs text-text-secondary">
-            <span>{reports.length} Reports Found</span>
+            <span>{reports.length} Genuine Reports Found</span>
             <span>Sorted by Recent Submission</span>
           </div>
 
           {isLoading ? (
             <div className="text-center py-16">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent" />
-              <p className="text-xs text-text-secondary mt-2">Loading civic complaints...</p>
+              <p className="text-xs text-text-secondary mt-2">Loading civic complaints from database...</p>
             </div>
           ) : reports.length === 0 ? (
             <Card className="p-8 text-center space-y-2">
-              <p className="text-sm font-semibold text-text-primary">No complaints match your filters.</p>
-              <p className="text-xs text-text-secondary">
-                Try widening your search terms or clearing selected category filters.
+              <p className="text-sm font-semibold text-text-primary">
+                {selectedDistrict
+                  ? `No complaints have been submitted yet in ${selectedDistrict}.`
+                  : 'No complaints have been submitted yet.'}
               </p>
-              <Button size="sm" variant="outline" onClick={handleClearFilters} className="mt-2">
-                Reset Filters
-              </Button>
+              <p className="text-xs text-text-secondary">
+                Genuine citizen-submitted issues across Tamil Nadu will appear here in real time.
+              </p>
+              {(selectedDistrict || selectedCatId || selectedStatus || selectedPriority || searchTerm) && (
+                <Button size="sm" variant="outline" onClick={handleClearFilters} className="mt-2">
+                  Reset Filters
+                </Button>
+              )}
             </Card>
           ) : (
             reports.map((report) => {

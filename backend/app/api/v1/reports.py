@@ -211,8 +211,8 @@ def list_public_reports(
     if priority_level is not None:
         query = query.filter(Report.priority_level == priority_level)
 
-    if ward_or_area is not None:
-        query = query.filter(Report.ward_or_area == ward_or_area)
+    if ward_or_area and ward_or_area.strip():
+        query = query.filter(Report.ward_or_area.ilike(f"%{ward_or_area.strip()}%"))
 
     offset = (page - 1) * page_size
     reports = query.order_by(desc(Report.created_at)).offset(offset).limit(page_size).all()
@@ -248,14 +248,17 @@ def list_public_reports(
 def get_map_reports(
     category_id: Optional[int] = None,
     status: Optional[ReportStatus] = None,
+    ward_or_area: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    """Returns lightweight pins for the OpenStreetMap explorer."""
+    """Returns lightweight pins for the OpenStreetMap explorer across Tamil Nadu."""
     query = db.query(Report)
     if category_id is not None:
         query = query.filter(Report.category_id == category_id)
     if status is not None:
         query = query.filter(Report.status == status)
+    if ward_or_area and ward_or_area.strip():
+        query = query.filter(Report.ward_or_area.ilike(f"%{ward_or_area.strip()}%"))
 
     reports = query.order_by(desc(Report.created_at)).limit(500).all()
     results = []

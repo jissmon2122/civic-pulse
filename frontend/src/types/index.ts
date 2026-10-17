@@ -1,4 +1,4 @@
-export type UserRole = 'citizen' | 'staff' | 'admin';
+export type UserRole = 'citizen' | 'staff' | 'officer' | 'field_worker' | 'admin';
 export type UserStatus = 'active' | 'suspended';
 
 export interface User {
@@ -8,14 +8,17 @@ export interface User {
   role: UserRole;
   account_status: UserStatus;
   phone_number?: string;
+  department_id?: number;
   created_at: string;
 }
 
 export type ReportStatus =
   | 'SUBMITTED'
   | 'UNDER_REVIEW'
+  | 'VERIFIED'
   | 'ASSIGNED'
   | 'IN_PROGRESS'
+  | 'RESOLUTION_SUBMITTED'
   | 'RESOLVED'
   | 'CLOSED'
   | 'NEEDS_INFORMATION'
@@ -172,4 +175,98 @@ export interface AuditLogItem {
   entity_id?: string;
   timestamp: string;
   metadata_json?: string;
+}
+
+// ---------------- MUNICIPAL PORTAL TYPES ----------------
+export interface Department {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  contact_email?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface MunicipalStaff {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  department_id?: number;
+  department_name?: string;
+  account_status: UserStatus;
+  phone_number?: string;
+  active_assignments_count: number;
+}
+
+export interface ActiveAssignment {
+  id: number;
+  assigned_to: string;
+  staff_name?: string;
+  department_id?: number;
+  department_name?: string;
+  due_date?: string;
+  instructions?: string;
+  assigned_at?: string;
+  status: string;
+}
+
+export interface MunicipalComplaint extends Report {
+  department_id?: number;
+  department_name?: string;
+  department_code?: string;
+  due_date?: string;
+  is_overdue: boolean;
+  officer_notes?: string;
+  verified_at?: string;
+  verified_by?: string;
+  verifier_name?: string;
+  rejection_reason?: string;
+  active_assignment?: ActiveAssignment;
+}
+
+export interface MunicipalAssignment {
+  id: number;
+  report_id: string;
+  report_title: string;
+  report_reference: string;
+  priority_level: PriorityLevel;
+  status: string;
+  assigned_to: string;
+  staff_name?: string;
+  department_id?: number;
+  department_name?: string;
+  due_date?: string;
+  instructions?: string;
+  assigned_at?: string;
+  ward_or_area?: string;
+  category_name?: string;
+  is_overdue: boolean;
+}
+
+export interface MunicipalDashboardStats {
+  total_complaints: number;
+  new_complaints: number;
+  awaiting_verification: number;
+  verified_complaints: number;
+  assigned_complaints: number;
+  work_in_progress: number;
+  resolved_complaints: number;
+  overdue_complaints: number;
+  category_distribution: Array<{ name: string; count: number; percentage: number }>;
+  status_distribution: Array<{ status: string; count: number }>;
+  priority_distribution: Array<{ priority: string; count: number }>;
+  recent_complaints: MunicipalComplaint[];
+  high_priority_issues: MunicipalComplaint[];
+  overdue_assignments: MunicipalComplaint[];
+  department_workload: Array<{
+    department_id: number;
+    department_name: string;
+    department_code: string;
+    active_count: number;
+    resolved_count: number;
+    total_count: number;
+  }>;
+  daily_trend: Array<{ date: string; submitted: number; resolved: number }>;
 }

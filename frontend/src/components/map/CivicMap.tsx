@@ -63,18 +63,31 @@ const ChangeMapView: React.FC<{ center: [number, number]; zoom: number }> = ({ c
   return null;
 };
 
+import { TAMIL_NADU_CENTER, TAMIL_NADU_DEFAULT_ZOOM } from '../../utils/tamilNaduDistricts';
+
 export const CivicMap: React.FC<CivicMapProps> = ({
   reports,
   selectedReportId,
   onSelectReport,
-  center = [12.9716, 77.5946],
-  zoom = 13,
+  center = TAMIL_NADU_CENTER,
+  zoom = TAMIL_NADU_DEFAULT_ZOOM,
   className = 'h-[500px] w-full',
 }) => {
   const selectedReport = reports.find((r) => r.id === selectedReportId);
   const activeCenter: [number, number] = selectedReport
     ? [selectedReport.latitude, selectedReport.longitude]
     : center;
+
+  // Filter only complaints with genuinely valid coordinates
+  const validReports = reports.filter(
+    (r) =>
+      typeof r.latitude === 'number' &&
+      typeof r.longitude === 'number' &&
+      !isNaN(r.latitude) &&
+      !isNaN(r.longitude) &&
+      r.latitude !== 0 &&
+      r.longitude !== 0
+  );
 
   return (
     <div className={`relative rounded-2xl overflow-hidden border border-border shadow-card ${className}`}>
@@ -93,7 +106,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
           maxZoom={19}
         />
 
-        {reports.map((report) => {
+        {validReports.map((report) => {
           const isSelected = report.id === selectedReportId;
           const icon = createCustomIcon(report.status, isSelected);
 

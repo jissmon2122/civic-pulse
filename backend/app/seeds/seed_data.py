@@ -5,34 +5,62 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal, Base, engine
 from app.models import (
     User, UserRole, UserStatus, Category, Report, ReportStatus, PriorityLevel,
-    ReportHistory, Notification, Assignment
+    ReportHistory, Notification, Assignment, Department
 )
 from app.core.security import hash_password
 from app.api.v1.reports import generate_public_reference
 from app.ai.priority import compute_priority_score
 
 
+DEMO_DEPARTMENTS = [
+    ("Road Maintenance", "ROAD", "Road crater repair, resurfacing, asphalt works, and central divider maintenance", "roads@municipal.gov"),
+    ("Drainage and Sewerage", "DRAIN", "Stormwater drains, sewer blockages, manhole repair, and flood mitigation", "drainage@municipal.gov"),
+    ("Waste Management", "WASTE", "Solid waste collection, litter mitigation, dumping clearance, and container service", "waste@municipal.gov"),
+    ("Street Lighting", "LIGHT", "Streetlamp electrical maintenance, pole repairs, dark street illumination, and cabling", "lighting@municipal.gov"),
+    ("Public Works", "PW", "Public benches, footbridges, ramps, civic structures, and municipal buildings", "publicworks@municipal.gov"),
+    ("Water Supply", "WATER", "Municipal pipeline maintenance, valve repairs, potable drinking water leak resolution", "water@municipal.gov")
+]
+
 DEMO_USERS = [
     {
         "name": "Jane Citizen (Demo)",
-        "email": "citizen@civicpulse.local",
+        "email": "citizen@civicpulse.org",
         "password": "DemoCitizen123!",
         "role": UserRole.CITIZEN,
-        "phone_number": "+1-555-0101"
+        "phone_number": "+1-555-0101",
+        "dept_code": None
     },
     {
         "name": "Alex Officer (Demo Staff)",
-        "email": "staff@civicpulse.local",
+        "email": "staff@civicpulse.org",
         "password": "DemoStaff123!",
         "role": UserRole.STAFF,
-        "phone_number": "+1-555-0102"
+        "phone_number": "+1-555-0102",
+        "dept_code": "ROAD"
+    },
+    {
+        "name": "Marcus Vance (Municipal Officer)",
+        "email": "officer@civicpulse.org",
+        "password": "DemoOfficer123!",
+        "role": UserRole.OFFICER,
+        "phone_number": "+1-555-0104",
+        "dept_code": "LIGHT"
+    },
+    {
+        "name": "Dave Miller (Field Worker)",
+        "email": "worker@civicpulse.org",
+        "password": "DemoWorker123!",
+        "role": UserRole.FIELD_WORKER,
+        "phone_number": "+1-555-0105",
+        "dept_code": "ROAD"
     },
     {
         "name": "Sarah Commissioner (Demo Admin)",
-        "email": "admin@civicpulse.local",
+        "email": "admin@civicpulse.org",
         "password": "DemoAdmin123!",
         "role": UserRole.ADMIN,
-        "phone_number": "+1-555-0103"
+        "phone_number": "+1-555-0103",
+        "dept_code": "PW"
     }
 ]
 
@@ -124,22 +152,37 @@ SAMPLE_REPORTS = [
 ]
 
 
-def seed_database():
-    """Seeds database with realistic, clearly labeled fictional demo data."""
-    print("Seeding database with demo data...")
+def seed_database(include_demo_complaints: bool = False):
+    """Seeds database with municipal departments, categories, and staff accounts. Real complaints are never fabricated."""
+    print("Initializing Civic Pulse municipal database...")
     Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
 
     try:
-        # 1. Seed or retrieve Categories
+        # 1. Seed or retrieve Departments
+        dept_map = {}
+        for d_name, d_code, d_desc, d_email in DEMO_DEPARTMENTS:
+            existing_dept = db.query(Department).filter(Department.code == d_code).first()
+            if not existing_dept:
+                d = Department(name=d_name, code=d_code, description=d_desc, contact_email=d_email, is_active=True)
+                db.add(d)
+                db.commit()
+                db.refresh(d)
+                dept_map[d_code] = d
+            else:
+                dept_map[d_code] = existing_dept
+
+        # 2. Seed or retrieve Categories
         category_map = {}
         for cat in db.query(Category).all():
             category_map[cat.name] = cat.id
 
-        # 2. Seed Demo Users
+        # 3. Seed Demo Users
         user_map = {}
         for u_data in DEMO_USERS:
             existing = db.query(User).filter(User.email == u_data["email"]).first()
+            dept_obj = dept_map.get(u_data.get("dept_code"))
+            dept_id = dept_obj.id if dept_obj else None
             if not existing:
                 u = User(
                     name=u_data["name"],
@@ -147,118 +190,157 @@ def seed_database():
                     password_hash=hash_password(u_data["password"]),
                     role=u_data["role"],
                     account_status=UserStatus.ACTIVE,
-                    phone_number=u_data["phone_number"]
+                    phone_number=u_data["phone_number"],
+                    department_id=dept_id
                 )
                 db.add(u)
                 db.commit()
                 db.refresh(u)
                 user_map[u.role] = u
             else:
+                if dept_id and not existing.department_id:
+                    existing.department_id = dept_id
+                    db.commit()
                 user_map[existing.role] = existing
 
         citizen = user_map[UserRole.CITIZEN]
         staff = user_map[UserRole.STAFF]
+        officer = user_map.get(UserRole.OFFICER, staff)
+        worker = user_map.get(UserRole.FIELD_WORKER, staff)
         admin = user_map[UserRole.ADMIN]
 
-        # 3. Seed Demo Reports
-        now = datetime.now(timezone.utc)
-        for r_spec in SAMPLE_REPORTS:
-            cat_id = category_map.get(r_spec["category_name"], 1)
-            created_time = now - timedelta(days=r_spec["age_days"])
-            
-            # Check if similar report already seeded
-            existing_report = db.query(Report).filter(Report.title == r_spec["title"]).first()
-            if existing_report:
-                continue
+        # Department by Category mapping
+        cat_to_dept = {
+            "Broken streetlights": dept_map.get("LIGHT"),
+            "Potholes and damaged roads": dept_map.get("ROAD"),
+            "Water supply and leakage": dept_map.get("WATER"),
+            "Garbage and waste management": dept_map.get("WASTE"),
+            "Drainage and sewage": dept_map.get("DRAIN"),
+            "Damaged public infrastructure": dept_map.get("PW"),
+            "Public sanitation": dept_map.get("WASTE"),
+            "Other civic issues": dept_map.get("PW")
+        }
 
-            priority = compute_priority_score(
-                title=r_spec["title"],
-                description=r_spec["desc"],
-                category_name=r_spec["category_name"],
-                created_at=created_time,
-                duplicate_count=0
-            )
+        # 4. Complaints are NOT seeded into production/active databases
+        # Only genuine citizen complaints will be displayed.
+        if include_demo_complaints:
+            now = datetime.now(timezone.utc)
+            for r_spec in SAMPLE_REPORTS:
+                cat_id = category_map.get(r_spec["category_name"], 1)
+                dept_for_cat = cat_to_dept.get(r_spec["category_name"])
+                created_time = now - timedelta(days=r_spec["age_days"])
+                
+                # Check if similar report already seeded
+                existing_report = db.query(Report).filter(Report.title == r_spec["title"]).first()
+                if existing_report:
+                    continue
 
-            resolved_at = None
-            if r_spec["status"] in (ReportStatus.RESOLVED, ReportStatus.CLOSED):
-                resolved_at = created_time + timedelta(hours=r_spec.get("resolved_hours_after", 24))
+                priority = compute_priority_score(
+                    title=r_spec["title"],
+                    description=r_spec["desc"],
+                    category_name=r_spec["category_name"],
+                    created_at=created_time,
+                    duplicate_count=0
+                )
 
-            assigned_to = staff.id if r_spec["status"] in (ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS, ReportStatus.RESOLVED) else None
+                resolved_at = None
+                if r_spec["status"] in (ReportStatus.RESOLVED, ReportStatus.CLOSED):
+                    resolved_at = created_time + timedelta(hours=r_spec.get("resolved_hours_after", 24))
 
-            report = Report(
-                public_reference=generate_public_reference(),
-                title=r_spec["title"],
-                description=r_spec["desc"],
-                category_id=cat_id,
-                ai_suggested_category=r_spec["category_name"],
-                ai_confidence=0.88,
-                needs_human_review=False,
-                reported_by=citizen.id,
-                latitude=r_spec["lat"],
-                longitude=r_spec["lon"],
-                location_description=r_spec["location_desc"],
-                ward_or_area=r_spec["ward"],
-                status=r_spec["status"],
-                priority_score=priority["score"],
-                priority_level=priority["priority_level"],
-                priority_explanation=" | ".join(priority["factors"]),
-                assigned_to=assigned_to,
-                created_at=created_time,
-                updated_at=created_time + timedelta(hours=2),
-                resolved_at=resolved_at
-            )
-            db.add(report)
-            db.commit()
-            db.refresh(report)
+                assigned_to = worker.id if r_spec["status"] in (ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS) else (staff.id if r_spec["status"] == ReportStatus.RESOLVED else None)
+                due_date = created_time + timedelta(days=3) if assigned_to else None
 
-            # History
-            db.add(ReportHistory(
-                report_id=report.id,
-                changed_by=citizen.id,
-                previous_status=None,
-                new_status=ReportStatus.SUBMITTED,
-                public_comment="Initial report submitted with location pin.",
-                created_at=created_time
-            ))
+                report = Report(
+                    public_reference=generate_public_reference(),
+                    title=r_spec["title"],
+                    description=r_spec["desc"],
+                    category_id=cat_id,
+                    department_id=dept_for_cat.id if dept_for_cat else None,
+                    ai_suggested_category=r_spec["category_name"],
+                    ai_confidence=0.88,
+                    needs_human_review=False,
+                    reported_by=citizen.id,
+                    latitude=r_spec["lat"],
+                    longitude=r_spec["lon"],
+                    location_description=r_spec["location_desc"],
+                    ward_or_area=r_spec["ward"],
+                    status=r_spec["status"],
+                    priority_score=priority["score"],
+                    priority_level=priority["priority_level"],
+                    priority_explanation=" | ".join(priority["factors"]),
+                    assigned_to=assigned_to,
+                    due_date=due_date,
+                    created_at=created_time,
+                    updated_at=created_time + timedelta(hours=2),
+                    resolved_at=resolved_at
+                )
+                db.add(report)
+                db.commit()
+                db.refresh(report)
 
-            if r_spec["status"] in (ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS, ReportStatus.RESOLVED):
+                # History
                 db.add(ReportHistory(
                     report_id=report.id,
-                    changed_by=staff.id,
-                    previous_status=ReportStatus.SUBMITTED,
-                    new_status=ReportStatus.ASSIGNED,
-                    public_comment=f"Assigned to field team ({staff.name}).",
-                    internal_note="Dispatched priority work order to maintenance depot.",
-                    created_at=created_time + timedelta(hours=2)
+                    changed_by=citizen.id,
+                    previous_status=None,
+                    new_status=ReportStatus.SUBMITTED,
+                    public_comment="Initial report submitted with location pin.",
+                    created_at=created_time
                 ))
 
-            if r_spec["status"] == ReportStatus.RESOLVED:
-                db.add(ReportHistory(
+                if r_spec["status"] in (ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS, ReportStatus.RESOLVED):
+                    assign_assignee = worker if r_spec["status"] in (ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS) else staff
+                    db.add(ReportHistory(
+                        report_id=report.id,
+                        changed_by=officer.id,
+                        previous_status=ReportStatus.SUBMITTED,
+                        new_status=ReportStatus.ASSIGNED,
+                        public_comment=f"Assigned to {dept_for_cat.name if dept_for_cat else 'Department'} ({assign_assignee.name}).",
+                        internal_note="Work order issued with 72-hour SLA.",
+                        created_at=created_time + timedelta(hours=2)
+                    ))
+                    # Add Assignment entry
+                    db.add(Assignment(
+                        report_id=report.id,
+                        department_id=dept_for_cat.id if dept_for_cat else None,
+                        assigned_to=assign_assignee.id,
+                        assigned_by=officer.id,
+                        due_date=due_date,
+                        instructions="Field inspection and standard repair according to municipal code.",
+                        status="ACTIVE" if r_spec["status"] != ReportStatus.RESOLVED else "COMPLETED",
+                        assigned_at=created_time + timedelta(hours=2)
+                    ))
+
+                if r_spec["status"] == ReportStatus.RESOLVED:
+                    db.add(ReportHistory(
+                        report_id=report.id,
+                        changed_by=officer.id,
+                        previous_status=ReportStatus.IN_PROGRESS,
+                        new_status=ReportStatus.RESOLVED,
+                        public_comment=r_spec.get("resolution_note", "Issue resolved and inspected."),
+                        internal_note="Verified on-site by municipal inspector.",
+                        created_at=resolved_at or now
+                    ))
+
+                # Notification for citizen
+                db.add(Notification(
+                    recipient_id=citizen.id,
                     report_id=report.id,
-                    changed_by=staff.id,
-                    previous_status=ReportStatus.IN_PROGRESS,
-                    new_status=ReportStatus.RESOLVED,
-                    public_comment=r_spec.get("resolution_note", "Issue resolved and inspected."),
-                    created_at=resolved_at or now
+                    title=f"Update on #{report.public_reference}",
+                    message=f"Status: {report.status.value}. {r_spec.get('resolution_note', 'Your report is being processed.')}",
+                    created_at=now - timedelta(hours=1)
                 ))
-
-            # Notification for citizen
-            db.add(Notification(
-                recipient_id=citizen.id,
-                report_id=report.id,
-                title=f"Update on #{report.public_reference}",
-                message=f"Status: {report.status.value}. {r_spec.get('resolution_note', 'Your report is being processed.')}",
-                created_at=now - timedelta(hours=1)
-            ))
 
         db.commit()
-        print("Demo data seeded successfully.")
+        print("Initialization completed successfully. Real database active.")
     except Exception as e:
-        print(f"Error seeding demo data: {e}")
+        print(f"Error initializing data: {e}")
         db.rollback()
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    seed_database()
+    import sys
+    with_demo = "--with-demo-reports" in sys.argv
+    seed_database(include_demo_complaints=with_demo)

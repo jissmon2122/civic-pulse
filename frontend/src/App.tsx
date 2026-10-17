@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/layout/Navbar';
 import { BottomNav } from './components/layout/BottomNav';
@@ -19,6 +19,16 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { DevStyleguidePage } from './pages/DevStyleguidePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+
+// Municipal Staff Portal Pages
+import { MunicipalLoginPage } from './pages/municipal/MunicipalLoginPage';
+import { MunicipalDashboardPage } from './pages/municipal/MunicipalDashboardPage';
+import { MunicipalComplaintsPage } from './pages/municipal/MunicipalComplaintsPage';
+import { MunicipalComplaintDetailPage } from './pages/municipal/MunicipalComplaintDetailPage';
+import { MunicipalAssignmentsPage } from './pages/municipal/MunicipalAssignmentsPage';
+import { MunicipalAnalyticsPage } from './pages/municipal/MunicipalAnalyticsPage';
+import { MunicipalProfilePage } from './pages/municipal/MunicipalProfilePage';
+import { MunicipalProtectedRoute } from './components/auth/MunicipalProtectedRoute';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireStaff?: boolean; requireAdmin?: boolean }> = ({
   children,
@@ -51,12 +61,72 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requireStaff?: boole
 };
 
 export const AppContent: React.FC = () => {
+  const location = useLocation();
+  const isMunicipalRoute = location.pathname.startsWith('/municipal');
+
+  if (isMunicipalRoute) {
+    return (
+      <Routes>
+        <Route path="/municipal/login" element={<MunicipalLoginPage />} />
+        <Route
+          path="/municipal/dashboard"
+          element={
+            <MunicipalProtectedRoute>
+              <MunicipalDashboardPage />
+            </MunicipalProtectedRoute>
+          }
+        />
+        <Route
+          path="/municipal/complaints"
+          element={
+            <MunicipalProtectedRoute>
+              <MunicipalComplaintsPage />
+            </MunicipalProtectedRoute>
+          }
+        />
+        <Route
+          path="/municipal/complaints/:id"
+          element={
+            <MunicipalProtectedRoute>
+              <MunicipalComplaintDetailPage />
+            </MunicipalProtectedRoute>
+          }
+        />
+        <Route
+          path="/municipal/assignments"
+          element={
+            <MunicipalProtectedRoute>
+              <MunicipalAssignmentsPage />
+            </MunicipalProtectedRoute>
+          }
+        />
+        <Route
+          path="/municipal/analytics"
+          element={
+            <MunicipalProtectedRoute>
+              <MunicipalAnalyticsPage />
+            </MunicipalProtectedRoute>
+          }
+        />
+        <Route
+          path="/municipal/profile"
+          element={
+            <MunicipalProtectedRoute>
+              <MunicipalProfilePage />
+            </MunicipalProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-text-primary antialiased selection:bg-primary-tint selection:text-primary">
       <Navbar />
       <main className="flex-1">
         <Routes>
-          {/* Public Routes */}
+          {/* Public Citizen Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/explorer" element={<PublicExplorerPage />} />
           <Route path="/reports/:id" element={<ReportDetailPage />} />
@@ -91,7 +161,7 @@ export const AppContent: React.FC = () => {
             }
           />
 
-          {/* Staff & Admin Routes */}
+          {/* Legacy Staff & Admin Routes */}
           <Route
             path="/staff"
             element={

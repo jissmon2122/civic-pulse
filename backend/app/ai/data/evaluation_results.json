@@ -6,6 +6,98 @@
   "test_samples": 12,
   "test_accuracy": 0.5833,
   "test_macro_f1": 0.5708,
+  "class_labels": [
+    "Broken streetlights",
+    "Damaged public infrastructure",
+    "Drainage and sewage",
+    "Garbage and waste management",
+    "Other civic issues",
+    "Potholes and damaged roads",
+    "Public sanitation",
+    "Water supply and leakage"
+  ],
+  "confusion_matrix": [
+    [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+    ]
+  ],
   "detailed_metrics": {
     "Broken streetlights": {
       "precision": 1.0,

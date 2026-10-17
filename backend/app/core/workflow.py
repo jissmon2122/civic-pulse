@@ -6,14 +6,22 @@ from app.models import ReportStatus, UserRole
 ALLOWED_TRANSITIONS: Dict[ReportStatus, Set[ReportStatus]] = {
     ReportStatus.SUBMITTED: {
         ReportStatus.UNDER_REVIEW,
+        ReportStatus.VERIFIED,
         ReportStatus.REJECTED,
         ReportStatus.ASSIGNED
     },
     ReportStatus.UNDER_REVIEW: {
+        ReportStatus.VERIFIED,
         ReportStatus.ASSIGNED,
         ReportStatus.NEEDS_INFORMATION,
         ReportStatus.REJECTED,
         ReportStatus.IN_PROGRESS
+    },
+    ReportStatus.VERIFIED: {
+        ReportStatus.ASSIGNED,
+        ReportStatus.IN_PROGRESS,
+        ReportStatus.UNDER_REVIEW,
+        ReportStatus.REJECTED
     },
     ReportStatus.NEEDS_INFORMATION: {
         ReportStatus.UNDER_REVIEW,
@@ -22,14 +30,22 @@ ALLOWED_TRANSITIONS: Dict[ReportStatus, Set[ReportStatus]] = {
     },
     ReportStatus.ASSIGNED: {
         ReportStatus.IN_PROGRESS,
+        ReportStatus.VERIFIED,
         ReportStatus.UNDER_REVIEW,
         ReportStatus.NEEDS_INFORMATION,
         ReportStatus.REJECTED
     },
     ReportStatus.IN_PROGRESS: {
+        ReportStatus.RESOLUTION_SUBMITTED,
         ReportStatus.RESOLVED,
         ReportStatus.NEEDS_INFORMATION,
-        ReportStatus.UNDER_REVIEW
+        ReportStatus.UNDER_REVIEW,
+        ReportStatus.ASSIGNED
+    },
+    ReportStatus.RESOLUTION_SUBMITTED: {
+        ReportStatus.RESOLVED,
+        ReportStatus.IN_PROGRESS,
+        ReportStatus.NEEDS_INFORMATION
     },
     ReportStatus.RESOLVED: {
         ReportStatus.CLOSED,
@@ -40,6 +56,7 @@ ALLOWED_TRANSITIONS: Dict[ReportStatus, Set[ReportStatus]] = {
     },
     ReportStatus.REOPENED: {
         ReportStatus.UNDER_REVIEW,
+        ReportStatus.VERIFIED,
         ReportStatus.ASSIGNED,
         ReportStatus.IN_PROGRESS
     },
@@ -58,7 +75,7 @@ def can_transition_status(
     """
     Validates whether the requested state transition is allowed based on:
     1. The state transition graph.
-    2. The caller's role (CITIZEN, STAFF, ADMIN).
+    2. The caller's role (CITIZEN, FIELD_WORKER, STAFF, OFFICER, ADMIN).
     3. Whether the caller is the original reporter.
     """
     if current_status == target_status:
@@ -85,13 +102,16 @@ def can_transition_status(
 
         return False, f"Citizens do not have permission to change status to {target_status.value}."
 
-    elif role == UserRole.STAFF:
-        # Staff can manage all review, assignment, in-progress, resolution, and information requests.
-        # However, permanently closing or rejecting may require specific staff action.
+    elif role == UserRole.FIELD_WORKER:
+        # Field workers can start work (ASSIGNED -> IN_PROGRESS), request info,
+        # or submit work for verification (IN_PROGRESS -> RESOLUTION_SUBMITTED).
+        # They CANNOT directly mark as RESOLVED or REJECTED.
+        if target_status in {ReportStatus.RESOLVED, ReportStatus.REJECTED, ReportStatus.VERIFIED}:
+            return False, "Field workers cannot approve final resolution or reject complaints. Officer approval is required."
         return True, "Permitted"
 
-    elif role == UserRole.ADMIN:
-        # Admin can execute any valid transition in the state machine.
+    elif role in (UserRole.STAFF, UserRole.OFFICER, UserRole.ADMIN):
+        # Municipal Officers, Staff, and Admins have full operational authority
         return True, "Permitted"
 
     return False, "Unauthorized role."

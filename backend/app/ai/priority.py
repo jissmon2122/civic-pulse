@@ -101,7 +101,7 @@ def compute_priority_score(
     # 5. Duplicate Demand Signal (0-100)
     dup_score = min(100.0, duplicate_count * 25.0)
     if duplicate_count > 0:
-        factors.append(f"Demand signal amplified by {duplicate_count} related citizen reports")
+        factors.append(f"Demand signal amplified by {duplicate_count} related duplicate citizen reports")
 
     # Weighted Sum Formula
     weighted_score = (
