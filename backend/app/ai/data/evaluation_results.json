@@ -1,0 +1,72 @@
+{
+  "model_version": "v1.0.0-tfidf-logreg",
+  "algorithm": "TfidfVectorizer (unigram + bigram) + LogisticRegression (C=2.0)",
+  "total_dataset_samples": 48,
+  "train_samples": 36,
+  "test_samples": 12,
+  "test_accuracy": 0.5833,
+  "test_macro_f1": 0.5708,
+  "detailed_metrics": {
+    "Broken streetlights": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1.0
+    },
+    "Damaged public infrastructure": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "Drainage and sewage": {
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1-score": 0.6666666666666666,
+      "support": 2.0
+    },
+    "Garbage and waste management": {
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1-score": 0.6666666666666666,
+      "support": 2.0
+    },
+    "Other civic issues": {
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1-score": 0.6666666666666666,
+      "support": 2.0
+    },
+    "Potholes and damaged roads": {
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1-score": 0.6666666666666666,
+      "support": 1.0
+    },
+    "Public sanitation": {
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1-score": 0.5,
+      "support": 2.0
+    },
+    "Water supply and leakage": {
+      "precision": 0.25,
+      "recall": 1.0,
+      "f1-score": 0.4,
+      "support": 1.0
+    },
+    "accuracy": 0.5833333333333334,
+    "macro avg": {
+      "precision": 0.65625,
+      "recall": 0.625,
+      "f1-score": 0.5708333333333333,
+      "support": 12.0
+    },
+    "weighted avg": {
+      "precision": 0.7291666666666666,
+      "recall": 0.5833333333333334,
+      "f1-score": 0.5888888888888889,
+      "support": 12.0
+    }
+  }
+}

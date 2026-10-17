@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --background: #FAFAF7;
+    --surface: #FFFFFF;
+    --surface-subtle: #F3F1EA;
+    --border: #E8E6DF;
+    --text-primary: #1F2933;
+    --text-secondary: #52606D;
+    --primary: #0E7C86;
+    --primary-hover: #0A6169;
+    --primary-tint: #E3F4F5;
+    --accent: #F5A524;
+    --status-resolved: #2E8B57;
+    --status-in-progress: #2F6FDE;
+    --status-review: #D98E04;
+    --status-critical: #D64545;
+    --status-closed: #7B8794;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+  }
+}
+
+/* Leaflet map styles */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  z-index: 10;
+  font-family: inherit;
+}
+
+/* Custom daylight scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F3F1EA;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD2D9;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9AA5B1;
+}
+
+/* Focus indicator for keyboard accessibility */
+:focus-visible {
+  outline: 2px solid #0E7C86;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0s !important;
+    transition-duration: 0s !important;
+  }
+}
