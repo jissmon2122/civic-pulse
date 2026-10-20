@@ -18,6 +18,7 @@ export const PublicExplorerPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.get('search') || '');
@@ -34,6 +35,7 @@ export const PublicExplorerPage: React.FC = () => {
 
   const fetchReports = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const data = await reportsApi.listPublicReports({
         search: searchTerm || undefined,
@@ -45,7 +47,7 @@ export const PublicExplorerPage: React.FC = () => {
       });
       setReports(data);
     } catch {
-      // Graceful fallback
+      setErrorMessage('Unable to load reports. Please retry shortly.');
     } finally {
       setIsLoading(false);
     }
@@ -209,6 +211,12 @@ export const PublicExplorerPage: React.FC = () => {
             <span>{reports.length} Genuine Reports Found</span>
             <span>Sorted by Recent Submission</span>
           </div>
+
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-status-critical-tint border border-status-critical/20 text-xs text-status-critical font-medium text-center">
+              {errorMessage}
+            </div>
+          )}
 
           {isLoading ? (
             <div className="text-center py-16">

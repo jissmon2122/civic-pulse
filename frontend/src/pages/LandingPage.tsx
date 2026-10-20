@@ -26,10 +26,27 @@ import { PriorityChip } from '../components/common/PriorityChip';
 export const LandingPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [recentReports, setRecentReports] = useState<Report[]>([]);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [reportsError, setReportsError] = useState<string | null>(null);
 
   useEffect(() => {
-    adminApi.listCategories().then(setCategories).catch(() => {});
-    reportsApi.listPublicReports({ page: 1, page_size: 4 }).then(setRecentReports).catch(() => {});
+    adminApi.listCategories()
+      .then((data) => {
+        setCategories(data);
+        setCategoriesError(null);
+      })
+      .catch(() => {
+        setCategoriesError('Unable to load complaint categories. Please try again.');
+      });
+
+    reportsApi.listPublicReports({ page: 1, page_size: 4 })
+      .then((data) => {
+        setRecentReports(data);
+        setReportsError(null);
+      })
+      .catch(() => {
+        setReportsError('Unable to load reports. Please retry shortly.');
+      });
   }, []);
 
   const categoryIcons: Record<string, React.ReactNode> = {
@@ -149,31 +166,43 @@ export const LandingPage: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/explorer?category_id=${cat.id}`}
-              className="p-4 rounded-2xl bg-surface border border-border hover:border-primary/50 hover:shadow-card transition-all duration-150 flex flex-col items-start gap-2.5 group"
-            >
-              <div className="p-2.5 rounded-xl bg-surface-subtle group-hover:scale-105 transition-transform">
-                {categoryIcons[cat.name] || <AlertTriangle className="text-primary" size={24} />}
-              </div>
-              <div>
-                <h4 className="font-heading font-bold text-xs text-text-primary group-hover:text-primary transition-colors">
-                  {cat.name}
-                </h4>
-                <p className="text-[11px] text-text-secondary line-clamp-2 mt-0.5">
-                  {cat.description || 'Public issue reports and maintenance'}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {categoriesError ? (
+          <div className="p-4 rounded-xl bg-status-critical-tint border border-status-critical/20 text-xs text-status-critical font-medium text-center">
+            {categoriesError}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/explorer?category_id=${cat.id}`}
+                className="p-4 rounded-2xl bg-surface border border-border hover:border-primary/50 hover:shadow-card transition-all duration-150 flex flex-col items-start gap-2.5 group"
+              >
+                <div className="p-2.5 rounded-xl bg-surface-subtle group-hover:scale-105 transition-transform">
+                  {categoryIcons[cat.name] || <AlertTriangle className="text-primary" size={24} />}
+                </div>
+                <div>
+                  <h4 className="font-heading font-bold text-xs text-text-primary group-hover:text-primary transition-colors">
+                    {cat.name}
+                  </h4>
+                  <p className="text-[11px] text-text-secondary line-clamp-2 mt-0.5">
+                    {cat.description || 'Public issue reports and maintenance'}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Live Public Reports Preview */}
-      {recentReports.length > 0 && (
+      {reportsError ? (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="p-4 rounded-xl bg-status-critical-tint border border-status-critical/20 text-xs text-status-critical font-medium text-center">
+            {reportsError}
+          </div>
+        </section>
+      ) : recentReports.length > 0 ? (
         <section className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -218,7 +247,7 @@ export const LandingPage: React.FC = () => {
             ))}
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* Transparency and Decision Support Notice */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">

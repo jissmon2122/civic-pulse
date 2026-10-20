@@ -30,7 +30,13 @@ export const LoginPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Invalid email or password.');
+      if (err.status === 401) {
+        setErrorMessage('Incorrect email address or password.');
+      } else if (err.status === 403) {
+        setErrorMessage(err.message || 'Account is suspended or deactivated. Contact administrator.');
+      } else {
+        setErrorMessage(err.message || 'Login could not be completed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -116,27 +122,27 @@ export const LoginPage: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleQuickFill('citizen@civicpulse.local', 'DemoCitizen123!')}
+                  onClick={() => handleQuickFill('citizen@civicpulse.org', 'DemoCitizen123!')}
                   className="p-2 text-left rounded-xl border border-border bg-surface-subtle hover:bg-surface hover:border-primary/40 transition-colors"
                 >
                   <p className="text-xs font-bold text-text-primary">Citizen</p>
-                  <p className="text-[10px] text-text-secondary truncate">citizen@...</p>
+                  <p className="text-[10px] text-text-secondary truncate">citizen@civicpulse.org</p>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickFill('staff@civicpulse.local', 'DemoStaff123!')}
+                  onClick={() => handleQuickFill('staff@civicpulse.org', 'DemoStaff123!')}
                   className="p-2 text-left rounded-xl border border-border bg-surface-subtle hover:bg-surface hover:border-primary/40 transition-colors"
                 >
                   <p className="text-xs font-bold text-text-primary">Staff</p>
-                  <p className="text-[10px] text-text-secondary truncate">staff@...</p>
+                  <p className="text-[10px] text-text-secondary truncate">staff@civicpulse.org</p>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickFill('admin@civicpulse.local', 'DemoAdmin123!')}
+                  onClick={() => handleQuickFill('admin@civicpulse.org', 'DemoAdmin123!')}
                   className="p-2 text-left rounded-xl border border-border bg-surface-subtle hover:bg-surface hover:border-primary/40 transition-colors"
                 >
                   <p className="text-xs font-bold text-text-primary">Admin</p>
-                  <p className="text-[10px] text-text-secondary truncate">admin@...</p>
+                  <p className="text-[10px] text-text-secondary truncate">admin@civicpulse.org</p>
                 </button>
               </div>
             </div>

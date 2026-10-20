@@ -55,7 +55,16 @@ export async function apiClient<T>(
     }
 
     if (!response.ok) {
-      const errorMsg = data?.detail || data?.message || `Request failed with status ${response.status}`;
+      let errorMsg = data?.detail || data?.message;
+      if (!errorMsg) {
+        if (response.status >= 500) {
+          errorMsg = 'Municipal server is temporarily unavailable. Please retry shortly.';
+        } else if (response.status === 404) {
+          errorMsg = 'Requested resource not found.';
+        } else {
+          errorMsg = `Request failed with status ${response.status}`;
+        }
+      }
       const errorsList = data?.errors || [];
       const err: ApiError = {
         message: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg),

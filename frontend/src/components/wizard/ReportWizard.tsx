@@ -60,7 +60,9 @@ export const ReportWizard: React.FC = () => {
         setCategories(cats);
         if (cats.length > 0) setSelectedCategoryId(cats[0].id);
       })
-      .catch(() => {});
+      .catch(() => {
+        setSubmitError('Unable to load complaint categories. Please try again.');
+      });
   }, []);
 
   // Debounced AI classification when title or description changes
