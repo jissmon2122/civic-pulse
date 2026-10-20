@@ -19,6 +19,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { DevStyleguidePage } from './pages/DevStyleguidePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { PwaInstallPrompt } from './components/common/PwaInstallPrompt';
 
 // Municipal Staff Portal Pages
 import { MunicipalLoginPage } from './pages/municipal/MunicipalLoginPage';
@@ -66,65 +67,69 @@ export const AppContent: React.FC = () => {
 
   if (isMunicipalRoute) {
     return (
-      <Routes>
-        <Route path="/municipal/login" element={<MunicipalLoginPage />} />
-        <Route
-          path="/municipal/dashboard"
-          element={
-            <MunicipalProtectedRoute>
-              <MunicipalDashboardPage />
-            </MunicipalProtectedRoute>
-          }
-        />
-        <Route
-          path="/municipal/complaints"
-          element={
-            <MunicipalProtectedRoute>
-              <MunicipalComplaintsPage />
-            </MunicipalProtectedRoute>
-          }
-        />
-        <Route
-          path="/municipal/complaints/:id"
-          element={
-            <MunicipalProtectedRoute>
-              <MunicipalComplaintDetailPage />
-            </MunicipalProtectedRoute>
-          }
-        />
-        <Route
-          path="/municipal/assignments"
-          element={
-            <MunicipalProtectedRoute>
-              <MunicipalAssignmentsPage />
-            </MunicipalProtectedRoute>
-          }
-        />
-        <Route
-          path="/municipal/analytics"
-          element={
-            <MunicipalProtectedRoute>
-              <MunicipalAnalyticsPage />
-            </MunicipalProtectedRoute>
-          }
-        />
-        <Route
-          path="/municipal/profile"
-          element={
-            <MunicipalProtectedRoute>
-              <MunicipalProfilePage />
-            </MunicipalProtectedRoute>
-          }
-        />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <div className="min-h-screen flex flex-col bg-background text-text-primary antialiased">
+        <PwaInstallPrompt />
+        <Routes>
+          <Route path="/municipal/login" element={<MunicipalLoginPage />} />
+          <Route
+            path="/municipal/dashboard"
+            element={
+              <MunicipalProtectedRoute>
+                <MunicipalDashboardPage />
+              </MunicipalProtectedRoute>
+            }
+          />
+          <Route
+            path="/municipal/complaints"
+            element={
+              <MunicipalProtectedRoute>
+                <MunicipalComplaintsPage />
+              </MunicipalProtectedRoute>
+            }
+          />
+          <Route
+            path="/municipal/complaints/:id"
+            element={
+              <MunicipalProtectedRoute>
+                <MunicipalComplaintDetailPage />
+              </MunicipalProtectedRoute>
+            }
+          />
+          <Route
+            path="/municipal/assignments"
+            element={
+              <MunicipalProtectedRoute>
+                <MunicipalAssignmentsPage />
+              </MunicipalProtectedRoute>
+            }
+          />
+          <Route
+            path="/municipal/analytics"
+            element={
+              <MunicipalProtectedRoute>
+                <MunicipalAnalyticsPage />
+              </MunicipalProtectedRoute>
+            }
+          />
+          <Route
+            path="/municipal/profile"
+            element={
+              <MunicipalProtectedRoute>
+                <MunicipalProfilePage />
+              </MunicipalProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-text-primary antialiased selection:bg-primary-tint selection:text-primary">
+      <PwaInstallPrompt />
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0">
         <Routes>
           {/* Public Citizen Routes */}
           <Route path="/" element={<LandingPage />} />

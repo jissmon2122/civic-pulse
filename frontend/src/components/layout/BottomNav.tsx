@@ -16,7 +16,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-md border-t border-border shadow-lifted">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-md border-t border-border shadow-lifted pb-[env(safe-area-inset-bottom,0px)]">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item, idx) => {
           const isActive = location.pathname === item.path;
